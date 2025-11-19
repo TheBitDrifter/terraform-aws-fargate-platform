@@ -1,0 +1,16 @@
+# --- Terraform Files ---
+.terraform/             # Local Terraform working directory
+*.tfstate               # Terraform state file
+*.tfstate.* # Terraform state backup files
+*.plan                  # Terraform plan output files
+
+# Sensitive variable definitions (Do NOT commit secrets)
+*.tfvars
+*.tfvars.json
+
+# Crash/Debugging logs
+crash.log
+.terraform.lock.hcl     # Dependency lock file
+
+# --- Operating System Files ---
+.DS_Store               # macOS files
