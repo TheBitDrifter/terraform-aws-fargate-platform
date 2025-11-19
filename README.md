@@ -58,7 +58,8 @@ module "platform" {
   source  = "[github.com/your-org/terraform-aws-fargate-platform](https://github.com/your-org/terraform-aws-fargate-platform)"
   version = "v1.0.0"
 
-  project_name        = "acme-widgets-prod"
+  project_name        = "acme-widgets"
+  environment         = "prod"
   aws_region          = "us-east-1"
   vpc_cidr_block      = "10.0.0.0/16"
   availability_zones  = 2

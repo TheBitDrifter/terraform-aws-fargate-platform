@@ -11,6 +11,13 @@ variable "project_name" {
   type        = string
 }
 
+variable "environment" {
+  description = "Deployment environment (e.g., 'dev', 'staging', 'prod'). Used for resource naming and tagging."
+  type        = string
+}
+
+
+
 # --- VPC NETWORK CONFIGURATION ---
 
 variable "vpc_cidr_block" {

@@ -48,3 +48,8 @@ output "ecs_tasks_security_group_id" {
   description = "The ID of the Security Group for ECS Tasks."
   value       = aws_security_group.ecs_tasks_sg.id
 }
+
+output "internal_alb_dns_name" {
+  description = "The DNS name of the internal ALB."
+  value       = aws_lb.internal_alb.dns_name
+}

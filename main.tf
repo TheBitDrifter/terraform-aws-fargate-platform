@@ -2,9 +2,9 @@
 # Creates the necessary networking components and provides the subnet IDs.
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 3.19.0"
+  version = "~> 5.0"
 
-  name = "${var.project_name}-vpc"
+  name = "${var.project_name}-${var.environment}-vpc"
   cidr = var.vpc_cidr_block
 
   azs                      = slice(data.aws_availability_zones.available.names, 0, var.availability_zones)
@@ -21,13 +21,13 @@ data "aws_availability_zones" "available" {}
 # --- 2. ECS CLUSTER ---
 # The control plane for scheduling all Fargate tasks.
 resource "aws_ecs_cluster" "this" {
-  name = "${var.project_name}-${var.cluster_name}"
+  name = "${var.project_name}-${var.environment}-${var.cluster_name}"
 }
 
 # --- 3. SECURITY GROUP (Shared Communication) ---
 # Required for the ALB and VPC Link to securely access private subnets.
 resource "aws_security_group" "alb_service_sg" {
-  name        = "${var.project_name}-alb-service-sg"
+  name        = "${var.project_name}-${var.environment}-alb-service-sg"
   description = "Allows ingress from VPC Link and egress to ECS Tasks."
   vpc_id      = module.vpc.vpc_id
 
@@ -51,7 +51,7 @@ resource "aws_security_group" "alb_service_sg" {
 # --- 4. INTERNAL APPLICATION LOAD BALANCER ---
 # The shared, private entry point for all service traffic.
 resource "aws_lb" "internal_alb" {
-  name               = "${var.project_name}-int-alb"
+  name               = "${var.project_name}-${var.environment}-int-alb"
   internal           = true # Critical: Ensures privacy
   load_balancer_type = "application"
   subnets            = module.vpc.private_subnets # Placed in private subnets
@@ -78,13 +78,13 @@ resource "aws_lb_listener" "internal_http" {
 # --- 5. API GATEWAY AND VPC LINK (Public Access Bridge) ---
 # The public front door (API Gateway)
 resource "aws_apigatewayv2_api" "this" {
-  name          = "${var.project_name}-http-api"
+  name          = "${var.project_name}-${var.environment}-http-api"
   protocol_type = "HTTP"
 }
 
 # VPC Link (The secure tunnel)
 resource "aws_apigatewayv2_vpc_link" "this" {
-  name               = "${var.project_name}-vpc-link"
+  name               = "${var.project_name}-${var.environment}-vpc-link"
   subnet_ids         = module.vpc.private_subnets # Must live in the same private subnets as the ALB
   security_group_ids = [aws_security_group.alb_service_sg.id] # Shares SG access
 }
@@ -99,7 +99,7 @@ resource "aws_apigatewayv2_stage" "default" {
 # --- 6. SECURITY GROUP FOR ECS TASKS ---
 # Dedicated SG for Fargate tasks, allowing traffic only from the ALB.
 resource "aws_security_group" "ecs_tasks_sg" {
-  name        = "${var.project_name}-ecs-tasks-sg"
+  name        = "${var.project_name}-${var.environment}-ecs-tasks-sg"
   description = "Allow inbound access from the ALB only"
   vpc_id      = module.vpc.vpc_id
 
