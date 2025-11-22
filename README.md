@@ -47,7 +47,33 @@ The primary function of this module is to generate the following outputs, which 
 | `alb_listener_arn` | Target for new service routing rules. | `alb_listener_arn` |
 | `api_gateway_id`, `vpc_link_id` | Routing targets for public exposure. | `api_gateway_id`, `vpc_link_id` |
 
----
+| `api_gateway_id`, `vpc_link_id` | Routing targets for public exposure. | `api_gateway_id`, `vpc_link_id` |
+| `internal_alb_dns_name` | DNS name of the internal ALB. | N/A |
+
+## 🔧 Configuration
+
+You can toggle specific components to optimize for cost or specific workload types (e.g., Lambda-only).
+
+| Variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `enable_ecs` | `bool` | `true` | Provisions ECS Cluster and Security Groups. |
+| `enable_alb` | `bool` | `true` | Provisions Internal ALB and VPC Link. |
+| `enable_nat_gateway` | `bool` | `true` | Provisions NAT Gateway for private subnet internet access. |
+
+### ⚡ Lambda-Only Mode
+
+To deploy a lightweight, low-cost environment for Lambda services (no containers), disable the "heavy" components:
+
+```hcl
+module "platform" {
+  # ...
+  enable_ecs         = false
+  enable_alb         = false
+  enable_nat_gateway = false # Optional: Keep true if Lambdas need internet
+}
+```
+
+> **Note:** In this mode, `ecs_cluster_id`, `alb_listener_arn`, and `vpc_link_id` will be `null`.
 
 ## ⚙️ Usage (For Reference)
 

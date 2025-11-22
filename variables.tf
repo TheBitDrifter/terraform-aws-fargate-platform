@@ -46,9 +46,26 @@ variable "availability_zones" {
 
 # --- FARGATE/ECS CONFIGURATION ---
 
+variable "enable_nat_gateway" {
+  description = "Provision a NAT Gateway for private subnets (Cost: ~$32/mo). Required for Fargate/Lambda in private subnets to access internet."
+  type        = bool
+  default     = true
+}
+
+variable "enable_ecs" {
+  description = "Provision an ECS Cluster and related security groups (Cost: Free, but required for Fargate)."
+  type        = bool
+  default     = true
+}
+
+variable "enable_alb" {
+  description = "Provision an Internal Application Load Balancer (Cost: ~$16/mo). Required for Fargate services."
+  type        = bool
+  default     = true
+}
+
 variable "cluster_name" {
   description = "Name for the ECS Cluster."
   type        = string
   default     = "application-cluster"
 }
-

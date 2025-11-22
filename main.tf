@@ -11,7 +11,7 @@ module "vpc" {
   public_subnets           = var.public_subnets
   private_subnets          = var.private_subnets
   enable_dns_hostnames     = true
-  enable_nat_gateway       = true # Required for Fargate tasks to reach ECR/Internet
+  enable_nat_gateway       = var.enable_nat_gateway # Required for Fargate tasks to reach ECR/Internet
   single_nat_gateway       = true # Cost optimization
   create_igw               = true
 }
@@ -21,12 +21,14 @@ data "aws_availability_zones" "available" {}
 # --- 2. ECS CLUSTER ---
 # The control plane for scheduling all Fargate tasks.
 resource "aws_ecs_cluster" "this" {
+  count = var.enable_ecs ? 1 : 0
   name = "${var.project_name}-${var.environment}-${var.cluster_name}"
 }
 
 # --- 3. SECURITY GROUP (Shared Communication) ---
 # Required for the ALB and VPC Link to securely access private subnets.
 resource "aws_security_group" "alb_service_sg" {
+  count = var.enable_alb ? 1 : 0
   name        = "${var.project_name}-${var.environment}-alb-service-sg"
   description = "Allows ingress from VPC Link and egress to ECS Tasks."
   vpc_id      = module.vpc.vpc_id
@@ -51,16 +53,18 @@ resource "aws_security_group" "alb_service_sg" {
 # --- 4. INTERNAL APPLICATION LOAD BALANCER ---
 # The shared, private entry point for all service traffic.
 resource "aws_lb" "internal_alb" {
+  count              = var.enable_alb ? 1 : 0
   name               = "${var.project_name}-${var.environment}-int-alb"
   internal           = true # Critical: Ensures privacy
   load_balancer_type = "application"
   subnets            = module.vpc.private_subnets # Placed in private subnets
-  security_groups    = [aws_security_group.alb_service_sg.id]
+  security_groups    = [aws_security_group.alb_service_sg[0].id]
 }
 
 # Listener for the Internal ALB (Port 80 HTTP)
 resource "aws_lb_listener" "internal_http" {
-  load_balancer_arn = aws_lb.internal_alb.arn
+  count             = var.enable_alb ? 1 : 0
+  load_balancer_arn = aws_lb.internal_alb[0].arn
   port              = 80
   protocol          = "HTTP"
   
@@ -84,9 +88,10 @@ resource "aws_apigatewayv2_api" "this" {
 
 # VPC Link (The secure tunnel)
 resource "aws_apigatewayv2_vpc_link" "this" {
+  count              = var.enable_alb ? 1 : 0
   name               = "${var.project_name}-${var.environment}-vpc-link"
   subnet_ids         = module.vpc.private_subnets # Must live in the same private subnets as the ALB
-  security_group_ids = [aws_security_group.alb_service_sg.id] # Shares SG access
+  security_group_ids = [aws_security_group.alb_service_sg[0].id] # Shares SG access
 }
 
 # Default Deployment Stage
@@ -99,6 +104,7 @@ resource "aws_apigatewayv2_stage" "default" {
 # --- 6. SECURITY GROUP FOR ECS TASKS ---
 # Dedicated SG for Fargate tasks, allowing traffic only from the ALB.
 resource "aws_security_group" "ecs_tasks_sg" {
+  count       = var.enable_ecs ? 1 : 0
   name        = "${var.project_name}-${var.environment}-ecs-tasks-sg"
   description = "Allow inbound access from the ALB only"
   vpc_id      = module.vpc.vpc_id
@@ -108,7 +114,7 @@ resource "aws_security_group" "ecs_tasks_sg" {
     protocol        = "tcp"
     from_port       = 3000
     to_port         = 3000
-    security_groups = [aws_security_group.alb_service_sg.id]
+    security_groups = var.enable_alb ? [aws_security_group.alb_service_sg[0].id] : []
   }
 
   # Egress: Allow all outbound (for ECR, CloudWatch, etc.)

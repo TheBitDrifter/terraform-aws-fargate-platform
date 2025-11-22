@@ -19,12 +19,12 @@ output "default_security_group_id" {
 
 output "ecs_cluster_id" {
   description = "The ID of the central ECS cluster."
-  value       = aws_ecs_cluster.this.name
+  value       = try(aws_ecs_cluster.this[0].name, null)
 }
 
 output "alb_listener_arn" {
   description = "The ARN of the main internal ALB listener (Port 80/HTTP). Used by service modules to attach routing rules."
-  value       = aws_lb_listener.internal_http.arn
+  value       = try(aws_lb_listener.internal_http[0].arn, null)
 }
 
 # --- 3. API Gateway Outputs ---
@@ -36,7 +36,7 @@ output "api_gateway_id" {
 
 output "vpc_link_id" {
   description = "The ID of the VPC Link, used for secure routing into the private network."
-  value       = aws_apigatewayv2_vpc_link.this.id
+  value       = try(aws_apigatewayv2_vpc_link.this[0].id, null)
 }
 
 output "api_gateway_url" {
@@ -46,10 +46,10 @@ output "api_gateway_url" {
 
 output "ecs_tasks_security_group_id" {
   description = "The ID of the Security Group for ECS Tasks."
-  value       = aws_security_group.ecs_tasks_sg.id
+  value       = try(aws_security_group.ecs_tasks_sg[0].id, null)
 }
 
 output "internal_alb_dns_name" {
   description = "The DNS name of the internal ALB."
-  value       = aws_lb.internal_alb.dns_name
+  value       = try(aws_lb.internal_alb[0].dns_name, null)
 }
